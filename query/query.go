@@ -12,7 +12,8 @@ type ScanFunc func(*sql.Rows) (dns.RR, error)
 
 var (
 	scan = map[uint16]ScanFunc{
-		dns.TypeA:     scanA,
+		dns.TypeA:     scanAorAAAA,
+		dns.TypeAAAA:  scanAorAAAA,
 		dns.TypeCNAME: scanCNAME,
 	}
 )
@@ -25,7 +26,7 @@ func Scan(qtype uint16) ScanFunc {
 	return scan[qtype]
 }
 
-func scanA(rows *sql.Rows) (dns.RR, error) {
+func scanAorAAAA(rows *sql.Rows) (dns.RR, error) {
 	var ttl uint32
 	var name, addr string
 	err := rows.Scan(&name, &ttl, &addr)
