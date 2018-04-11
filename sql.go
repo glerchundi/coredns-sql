@@ -1,4 +1,4 @@
-package database
+package sql
 
 import (
 	"bytes"
@@ -9,21 +9,25 @@ import (
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/pkg/dnsutil"
 	"github.com/coredns/coredns/request"
-	"github.com/glerchundi/coredns-database/query"
+	"github.com/glerchundi/coredns-sql/query"
 	"github.com/miekg/dns"
 	"golang.org/x/net/context"
 )
 
-// Database is the plugin handler
-type Database struct {
+const (
+	name = "sql"
+)
+
+// SQL is the plugin handler
+type SQL struct {
 	Next    plugin.Handler
 	Queryer query.Queryer
 	Queries map[uint16]*template.Template
 
-	Config *DatabaseConfig
+	Config *SQLConfig
 }
 
-type DatabaseConfig struct {
+type SQLConfig struct {
 	Zones   []string
 	URL     *url.URL
 	TLSArgs []string
@@ -31,7 +35,7 @@ type DatabaseConfig struct {
 }
 
 // ServeDNS implements the plugin.Handle interface.
-func (d *Database) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
+func (d *SQL) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
 	state := request.Request{W: w, Req: r, Context: ctx}
 
 	zone := plugin.Zones(d.Config.Zones).Matches(state.Name())
@@ -72,7 +76,7 @@ func (d *Database) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Ms
 }
 
 // Name implements the Handler interface.
-func (d *Database) Name() string { return "database" }
+func (d *SQL) Name() string { return name }
 
 func newDatabaseQueryer(u *url.URL, tlsArgs ...string) (query.Queryer, error) {
 	switch u.Scheme {

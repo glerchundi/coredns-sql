@@ -1,4 +1,4 @@
-package database
+package sql
 
 import (
 	"errors"
@@ -22,18 +22,18 @@ var (
 )
 
 func init() {
-	caddy.RegisterPlugin("database", caddy.Plugin{
+	caddy.RegisterPlugin(name, caddy.Plugin{
 		ServerType: "dns",
 		Action:     setup,
 	})
 }
 
 func setup(c *caddy.Controller) error {
-	d := &Database{}
+	d := &SQL{}
 
-	dc, err := databaseParse(c)
+	dc, err := sqlParse(c)
 	if err != nil {
-		return plugin.Error("database", err)
+		return plugin.Error(name, err)
 	}
 	d.Config = dc
 
@@ -69,8 +69,8 @@ func setup(c *caddy.Controller) error {
 	return nil
 }
 
-func databaseParse(c *caddy.Controller) (*DatabaseConfig, error) {
-	dc := &DatabaseConfig{}
+func sqlParse(c *caddy.Controller) (*SQLConfig, error) {
+	dc := &SQLConfig{}
 
 	var (
 		err     error

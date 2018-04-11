@@ -1,1 +1,1 @@
-# coredns-database
+# coredns-sql

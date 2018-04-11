@@ -1,4 +1,4 @@
-package database
+package sql
 
 import (
 	"net/url"
@@ -9,22 +9,22 @@ import (
 	"github.com/miekg/dns"
 )
 
-func TestDatabaseParse(t *testing.T) {
+func TestSQLParse(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
-		want    *DatabaseConfig
+		want    *SQLConfig
 		wantErr bool
 	}{
 		{
 			name:    "empty",
-			input:   "database",
+			input:   "sql",
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name: "invalid url",
-			input: `database example.org {
+			input: `sql example.org {
 	url ##
 }`,
 			want:    nil,
@@ -32,11 +32,11 @@ func TestDatabaseParse(t *testing.T) {
 		},
 		{
 			name: "smallest",
-			input: `database example.org {
-	url postgresql://ip:1234/db
+			input: `sql example.org {
+	url postgresql://127.0.0.1/coredns
 }`,
-			want: &DatabaseConfig{
-				Zones:   make([]string, 0),
+			want: &SQLConfig{
+				Zones:   []string{"example.org."},
 				URL:     newURL("postgresql://127.0.0.1/coredns"),
 				Queries: defaultQueries,
 			},
@@ -44,12 +44,12 @@ func TestDatabaseParse(t *testing.T) {
 		},
 		{
 			name: "tls",
-			input: `database example.org {
-	url postgresql://ip:1234/db
+			input: `sql example.org {
+	url postgresql://127.0.0.1/coredns
 	tls client.crt client.key ca.pem
 }`,
-			want: &DatabaseConfig{
-				Zones:   make([]string, 0),
+			want: &SQLConfig{
+				Zones:   []string{"example.org."},
 				URL:     newURL("postgresql://127.0.0.1/coredns"),
 				Queries: defaultQueries,
 				TLSArgs: []string{"client.crt", "client.key", "ca.pem"},
@@ -58,12 +58,12 @@ func TestDatabaseParse(t *testing.T) {
 		},
 		{
 			name: "tls (ca-only)",
-			input: `database example.org {
-	url postgresql://ip:1234/db
+			input: `sql example.org {
+	url mysql://127.0.0.1:3306/coredns
 	tls ca.pem
 }`,
-			want: &DatabaseConfig{
-				Zones:   make([]string, 0),
+			want: &SQLConfig{
+				Zones:   []string{"example.org."},
 				URL:     newURL("mysql://127.0.0.1:3306/coredns"),
 				Queries: defaultQueries,
 				TLSArgs: []string{"ca.pem"},
@@ -72,13 +72,13 @@ func TestDatabaseParse(t *testing.T) {
 		},
 		{
 			name: "custom queries (override a)",
-			input: `database {
-	url postgresql://ip:1234/db
+			input: `sql example.org {
+	url postgresql://127.0.0.1/coredns
 	a_query "SELECT name, ttl, addr FROM tbl_a WHERE name = '{{.Name}}'"
 }`,
-			want: &DatabaseConfig{
-				Zones: make([]string, 0),
-				URL:   newURL("postgresql://ip:1234/db"),
+			want: &SQLConfig{
+				Zones: []string{"example.org."},
+				URL:   newURL("postgresql://127.0.0.1/coredns"),
 				Queries: map[uint16]string{
 					dns.TypeA:     "SELECT name, ttl, addr FROM tbl_a WHERE name = '{{.Name}}'",
 					dns.TypeAAAA:  defaultQueries[dns.TypeAAAA],
@@ -89,8 +89,8 @@ func TestDatabaseParse(t *testing.T) {
 		},
 		{
 			name: "invalid custom query (no quotes)",
-			input: `database example.org {
-	url postgresql://ip:1234/db
+			input: `sql example.org {
+	url postgresql://127.0.0.1/coredns
 	a_query SELECT name, ttl, addr FROM tbl_a WHERE name = '{{.Name}}'
 }`,
 			want:    nil,
@@ -100,14 +100,14 @@ func TestDatabaseParse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := databaseParse(caddy.NewTestController("database", tt.input))
+			got, err := sqlParse(caddy.NewTestController(name, tt.input))
 			if (err != nil) != tt.wantErr {
-				t.Errorf("databaseConfigParse() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("sqlParse() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("databaseConfigParse() = %v, want %v", got, tt.want)
+				t.Errorf("sqlParse() = %v, want %v", got, tt.want)
 			}
 		})
 	}
